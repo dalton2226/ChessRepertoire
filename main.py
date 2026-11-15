@@ -20,32 +20,33 @@ class ChessSquare(QLabel):
     def mousePressEvent(self, event):
          square_index = chess.square(self.col, 7 - self.row)
          piece = self.manager.board.piece_at(square_index)
+         friendly_piece = piece is not None and piece.color == self.manager.board.turn
 
          if self.manager.selected_square is None:
-             if piece is not None and piece.color == self.manager.board.turn:
+             if friendly_piece:
                 self.manager.selected_square = square_index
-                print("No Piece Selected Yet")
          else: 
-           if piece is not None and piece.color == self.manager.board.turn:
-               print("Friendly piece clicked")
+           if friendly_piece:
+               print("Selected:", chess.square_name(square_index))
                self.manager.selected_square = square_index
            else:
-               print("Enemy piece clicked")
                move = chess.Move(from_square = self.manager.selected_square, to_square= square_index)
                if move in self.manager.board.legal_moves:
                    print("Legal Move")
-                   self.manager.selected_square = None
-                   print(move)
+                   self.manager.board.push(move)
+                   print(self.manager.board)
                else:
                    print("Illegal Move")
-                   self.manager.selected_square = None
-                   print(move)
+               self.manager.selected_square = None
+               print(move)
+                
 
         
 class ChessBoard:
     def __init__(self):
         self.selected_square = None
         self.board = chess.Board()
+        self.squares = {}
 
 board_manager = ChessBoard()
 print(board_manager.selected_square)
@@ -82,6 +83,7 @@ for row in range(8):
        
         grid.addWidget(square, row, col)
         square_index = chess.square(col, 7 - row)
+        board_manager.squares[square_index] = square
         piece = board_manager.board.piece_at(square_index)
         if piece is not None:
             image_path = piece_images[piece.symbol()]
@@ -92,6 +94,10 @@ for row in range(8):
                 resized_image = image.scaled(65, 65)
                 square.setPixmap(resized_image)
                 square.setAlignment(Qt.AlignCenter)
+
+print(len(board_manager.squares))
+print(board_manager.squares[chess.E2].row)
+print(board_manager.squares[chess.E2].col)
 window.show()
 
 
