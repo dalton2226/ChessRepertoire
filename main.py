@@ -48,6 +48,10 @@ class ChessBoard:
         self.board = chess.Board()
         self.squares = {}
 
+    def update_board(self):
+        for square_index, square in self.squares.items():
+            print(chess.square_name(square_index))
+
 board_manager = ChessBoard()
 print(board_manager.selected_square)
 print(board_manager.board.turn)
@@ -95,9 +99,8 @@ for row in range(8):
                 square.setPixmap(resized_image)
                 square.setAlignment(Qt.AlignCenter)
 
-print(len(board_manager.squares))
-print(board_manager.squares[chess.E2].row)
-print(board_manager.squares[chess.E2].col)
+
+board_manager.update_board()
 window.show()
 
 
