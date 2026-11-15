@@ -21,7 +21,6 @@ class ChessSquare(QLabel):
          square_index = chess.square(self.col, 7 - self.row)
          piece = self.manager.board.piece_at(square_index)
          friendly_piece = piece is not None and piece.color == self.manager.board.turn
-
          if self.manager.selected_square is None:
              if friendly_piece:
                 self.manager.selected_square = square_index
@@ -34,6 +33,7 @@ class ChessSquare(QLabel):
                if move in self.manager.board.legal_moves:
                    print("Legal Move")
                    self.manager.board.push(move)
+                   self.manager.update_board()
                    print(self.manager.board)
                else:
                    print("Illegal Move")
@@ -50,8 +50,18 @@ class ChessBoard:
 
     def update_board(self):
         for square_index, square in self.squares.items():
-            print(chess.square_name(square_index))
-
+            piece = self.board.piece_at(square_index)
+            square.clear()
+            if piece is not None:
+                image_path = piece_images[piece.symbol()]
+                image = QPixmap(image_path)
+                if image.isNull():
+                    print("ERROR FINDING IMAGE", image_path)
+                else:
+                    resized_image = image.scaled(65, 65)
+                    square.setPixmap(resized_image)
+                    square.setAlignment(Qt.AlignCenter)
+            
 board_manager = ChessBoard()
 print(board_manager.selected_square)
 print(board_manager.board.turn)
@@ -88,16 +98,6 @@ for row in range(8):
         grid.addWidget(square, row, col)
         square_index = chess.square(col, 7 - row)
         board_manager.squares[square_index] = square
-        piece = board_manager.board.piece_at(square_index)
-        if piece is not None:
-            image_path = piece_images[piece.symbol()]
-            image = QPixmap(image_path)
-            if image.isNull():
-                print("ERROR FINDING IMAGE", image_path)
-            else:
-                resized_image = image.scaled(65, 65)
-                square.setPixmap(resized_image)
-                square.setAlignment(Qt.AlignCenter)
 
 
 board_manager.update_board()
