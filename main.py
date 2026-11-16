@@ -46,11 +46,11 @@ class ChessSquare(QLabel):
                if move in self.manager.board.legal_moves:
                    self.manager.board.push(move)
                    self.manager.update_board()
-                   self.manager.highlight_last_move()
-
+                   
                self.manager.reset_highlight()
                self.manager.clear_legal_moves()
                self.manager.selected_square = None
+               self.manager.highlight_last_move()
 
     def paintEvent(self, event):
         QLabel.paintEvent(self, event)
@@ -78,6 +78,7 @@ class ChessBoard:
         self.selected_square = None
         self.board = chess.Board()
         self.squares = {}
+        self.last_highlighted_move = None
 
     def update_board(self):
         for square_index, square in self.squares.items():
@@ -123,10 +124,28 @@ class ChessBoard:
 
     def highlight_last_move(self):
         if self.board.move_stack:
-           last_move = self.board.peek()
-           print(chess.square_name(last_move.from_square))
-           print(chess.square_name(last_move.to_square))
+           if self.last_highlighted_move is not None:
+               previous_from_widget = self.squares[self.last_highlighted_move.from_square]
+               previous_to_widget = self.squares[self.last_highlighted_move.to_square]
             
+               if (previous_from_widget.row + previous_from_widget.col) % 2 == 0:
+                previous_from_widget.setStyleSheet("background-color: #f0d9b5;")
+               else:
+                previous_from_widget.setStyleSheet("background-color: #b58863;")
+               if (previous_to_widget.row + previous_from_widget.col) % 2 ==0:
+                   previous_to_widget.setStyleSheet("background-color: #f0d9b5;")
+               else:
+                   previous_to_widget.setStyleSheet("background-color: #b58863;")
+                   
+               
+           last_move = self.board.peek()
+           from_widget = self.squares[last_move.from_square]
+           to_widget = self.squares[last_move.to_square]
+           from_widget.setStyleSheet("background-color: #cdd26a;")
+           to_widget.setStyleSheet("background-color: #cdd26a;")
+           self.last_highlighted_move = last_move
+           
+    
 board_manager = ChessBoard()
 print(board_manager.selected_square)
 print(board_manager.board.turn)
