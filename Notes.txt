@@ -1,0 +1,8 @@
+Previous Move Highlight Color White #cdd26a
+Previous Move Highlight Color Dark Squares
+
+Current Selection Highlight for Light Squares #646e40
+Current Selection Highlight For Dark Squares #829769
+Light Squares #f0d9b5
+Dark Squares #b58863
+P
