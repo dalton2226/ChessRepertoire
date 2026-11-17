@@ -5,4 +5,24 @@ Current Selection Highlight for Light Squares #646e40
 Current Selection Highlight For Dark Squares #829769
 Light Squares #f0d9b5
 Dark Squares #b58863
-P
+
+
+Missing features
+
+Pawn Promotion
+Check Mate Screen
+New Game
+Timer
+
+Repetoire
+
+Store opening lines	Not started
+Compare played moves against repertoire	Not started
+Automatically play the opponent's moves	Not started
+Restart an opening for practice	Not started
+Choose whether you're practicing White or Black.
+Save and load multiple openings
+Support different variations of the same opening.
+Show the correct move when you make a mistake.
+Track which openings you struggle with.
+Let you review openings you've previously save

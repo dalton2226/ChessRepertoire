@@ -1,7 +1,7 @@
 #Imports
 import sys
 import chess
-from PySide6.QtWidgets import QApplication, QWidget, QGridLayout, QLabel
+from PySide6.QtWidgets import QApplication, QWidget, QGridLayout, QLabel, QPushButton , QVBoxLayout, QHBoxLayout
 from PySide6.QtGui import QPixmap 
 from PySide6.QtCore import Qt 
 from PySide6.QtGui import QPainter, QColor, QBrush, QPen
@@ -10,12 +10,16 @@ app = QApplication(sys.argv)
 #region Create Window
 window = QWidget()
 window.setWindowTitle("Chess Repertoire")
+main_layout = QVBoxLayout()
 grid = QGridLayout()
+board_widget = QWidget()
+window.setLayout(main_layout)
+board_widget.setLayout(grid)
+main_layout.addWidget(board_widget)
 grid.setSpacing(0)
 grid.setContentsMargins(0, 0, 0, 0)
-window.setLayout(grid)
+main_layout.setAlignment(board_widget, Qt.AlignCenter)
 #endregion
-
 
 class ChessSquare(QLabel):
 
@@ -115,6 +119,13 @@ class ChessBoard:
                     destination_widget.show_dot= True
 
                 destination_widget.update()
+
+    def restore_square_color(self, square_index):
+        previous_widget = self.squares[square_index]
+        if(previous_widget.row + previous_widget.col) % 2 == 0:
+                previous_widget.setStyleSheet("background-color: #f0d9b5;")
+        else:
+            previous_widget.setStyleSheet("background-color: #b58863;")
                     
     def clear_legal_moves(self):
         for square_index, square in self.squares.items():
@@ -132,19 +143,35 @@ class ChessBoard:
                 previous_from_widget.setStyleSheet("background-color: #f0d9b5;")
                else:
                 previous_from_widget.setStyleSheet("background-color: #b58863;")
-               if (previous_to_widget.row + previous_from_widget.col) % 2 ==0:
+               if (previous_to_widget.row + previous_to_widget.col) % 2 ==0:
                    previous_to_widget.setStyleSheet("background-color: #f0d9b5;")
                else:
                    previous_to_widget.setStyleSheet("background-color: #b58863;")
                    
                
-           last_move = self.board.peek()
+           last_move = self.board.peek() # board.peek Retrieves Most recent Move
            from_widget = self.squares[last_move.from_square]
            to_widget = self.squares[last_move.to_square]
            from_widget.setStyleSheet("background-color: #cdd26a;")
            to_widget.setStyleSheet("background-color: #cdd26a;")
            self.last_highlighted_move = last_move
-           
+
+    def undo_move(self):
+            if self.board.move_stack:
+                self.reset_highlight()
+                self.clear_legal_moves()
+                self.selected_square = None
+
+                self.board.pop()
+                self.update_board()
+
+            if self.board.move_stack:
+                self.highlight_last_move()
+            else:
+                if self.last_highlighted_move is not None:
+                    self.restore_square_color(self.last_highlighted_move.from_square)
+                    self.restore_square_color(self.last_highlighted_move.to_square)
+                    self.last_highlighted_move = None
     
 board_manager = ChessBoard()
 print(board_manager.selected_square)
@@ -187,6 +214,10 @@ for row in range(8):
 
 
 board_manager.update_board()
+undo_button = QPushButton("Undo")
+undo_button.clicked.connect(board_manager.undo_move)
+main_layout.addWidget(undo_button)
+main_layout.addWidget(undo_button, alignment=Qt.AlignHCenter)
 window.show()
 
 
