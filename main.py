@@ -26,7 +26,7 @@ main_layout.setAlignment(board_widget, Qt.AlignCenter)
 class ChessSquare(QLabel):
 
     def mousePressEvent(self, event):
-         square_index = chess.square(self.col, 7 - self.row)
+         square_index = self.square_index
          piece = self.manager.board.piece_at(square_index)
          friendly_piece = piece is not None and piece.color == self.manager.board.turn
          if self.manager.selected_square is None:
@@ -82,6 +82,7 @@ class ChessBoard:
         self.board = chess.Board()
         self.squares = {}
         self.last_highlighted_move = None
+        self.flipped = False
 
     def update_board(self):
         for square_index, square in self.squares.items():
@@ -295,6 +296,21 @@ class ChessBoard:
                         print("Matching opening:", opening["Name"])
                         print(next_move)
         return list(continuations)
+    
+    def flip_board(self):
+        self.flipped = not self.flipped
+        print (self.flipped)
+        for square_index, square in self.squares.items():
+            grid.removeWidget(square)
+
+        for square_index, square in self.squares.items():
+            new_row = 7 - square.row
+            new_col = 7 - square.col
+            grid.addWidget(square, new_row, new_col)
+            square.row = new_row
+            square.col = new_col
+        self.arrow_overlay.update()
+
                     
 class ArrowOverlay(QWidget):
     def __init__(self, manager, parent=None):
@@ -306,6 +322,9 @@ class ArrowOverlay(QWidget):
     def square_to_pixels(self, square_index):
         column = chess.square_file(square_index)
         row = 7 - chess.square_rank(square_index)
+        if self.manager.flipped:
+            column = 7 - column
+            row = 7 - row
         centerX = (column * 75) + 37.5
         centerY = (row * 75) + 37.5
         return centerX, centerY
@@ -397,25 +416,32 @@ for row in range(8):
             square.setStyleSheet("background-color: #f0d9b5;")  
         else:
              square.setStyleSheet("background-color: #b58863;") 
-       
+
+        
         grid.addWidget(square, row, col)
         square_index = chess.square(col, 7 - row)
         board_manager.squares[square_index] = square
+        square.square_index = square_index
 
 board_manager.update_board()
 undo_button = QPushButton("Undo")
 undo_button.clicked.connect(board_manager.undo_move)
 arrow_overlay = ArrowOverlay(board_manager, board_widget)
+board_manager.arrow_overlay = arrow_overlay
 arrow_overlay.setGeometry(0, 0, 600, 600)
 arrow_overlay.raise_()
 arrow_overlay.show()
+
 save_opening_button = QPushButton("Save Opening")
 save_opening_button.clicked.connect(board_manager.show_save_window)
 load_opening_button = QPushButton("Load Opening")
 load_opening_button.clicked.connect(board_manager.load_opening)
+flip_board_button = QPushButton("Flip Board")
+flip_board_button.clicked.connect(board_manager.flip_board)
 main_layout.addWidget(undo_button, alignment=Qt.AlignHCenter)
 main_layout.addWidget(save_opening_button, alignment=Qt.AlignHCenter)
 main_layout.addWidget(load_opening_button, alignment=Qt.AlignHCenter)
+main_layout.addWidget(flip_board_button, alignment=Qt.AlignHCenter)
 
 
 window.show()
