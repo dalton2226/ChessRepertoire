@@ -3,8 +3,9 @@ import sys, json
 import chess
 from PySide6.QtWidgets import QApplication, QWidget, QGridLayout, QLabel, QPushButton , QVBoxLayout, QHBoxLayout, QDialog, QListWidget, QLineEdit, QComboBox
 from PySide6.QtGui import QPixmap 
-from PySide6.QtCore import Qt 
-from PySide6.QtGui import QPainter, QColor, QBrush, QPen
+from PySide6.QtCore import Qt, QPointF
+from PySide6.QtGui import QPainter, QColor, QBrush, QPen, QPolygonF
+import math
 app = QApplication(sys.argv)
 
 #region Create Window
@@ -180,16 +181,23 @@ class ChessBoard:
             print("No moves to save!")
             return
 
-        print(moves)
 
         opening = {
             "Name": opening_name,
             "Color": opening_color,
-            "Moves": moves
+            "Lines": [moves]
+            
         }
 
         openings = self.load_opening()
-        openings["Openings"].append(opening)
+        for existing_opening in openings["Openings"]:
+            if existing_opening["Name"] == opening_name and existing_opening["Color"] == opening_color:
+                if moves not in existing_opening["Lines"]:
+                    existing_opening["Lines"].append(moves)
+                break
+        else:
+            openings["Openings"].append(opening)
+                    
 
 
         with open("Openings.json", "w", encoding="utf-8") as file:
@@ -258,7 +266,16 @@ class ChessBoard:
         def select_opening():
             selected_item = opening_list.currentItem()
             if selected_item is not None:
-                print(selected_item.text())
+                selected_name = selected_item.text()
+
+                for opening in saved_openings["Openings"]:
+                    if opening["Name"] == selected_name:
+                        selected_color = opening["Color"]
+                        saved = self.save_opening(selected_name, selected_color)
+                        if saved:  
+                            dialog.accept()
+                            break
+
 
         opening_list.itemDoubleClicked.connect(select_opening)
 
@@ -270,20 +287,73 @@ class ChessBoard:
         continuations = set()
         
         for opening in saved_openings["Openings"]:
-            opening_moves = opening["Moves"]
-            if current_moves == opening_moves[:len(current_moves)]:
-                if len(opening_moves) > len(current_moves):
-                    next_move = opening_moves[len(current_moves)]
-                    continuations.add(next_move)
-                    print("Matching opening:", opening["Name"])
-                    print(next_move)
+            for opening_moves in opening["Lines"]:
+                if current_moves == opening_moves[:len(current_moves)]:
+                    if len(opening_moves) > len(current_moves):
+                        next_move = opening_moves[len(current_moves)]
+                        continuations.add(next_move)
+                        print("Matching opening:", opening["Name"])
+                        print(next_move)
         return list(continuations)
                     
 class ArrowOverlay(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, manager, parent=None):
         super().__init__(parent)
+        self.manager = manager
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setAttribute(Qt.WA_TransparentForMouseEvents)
+
+    def square_to_pixels(self, square_index):
+        column = chess.square_file(square_index)
+        row = 7 - chess.square_rank(square_index)
+        centerX = (column * 75) + 37.5
+        centerY = (row * 75) + 37.5
+        return centerX, centerY
+        
+        
+        
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        pen = QPen(QColor(0, 150, 255, 180), 6)
+        repertoire_moves = self.manager.get_repertoire_continuations()
+        painter.setPen(pen)
+        for uci_move in repertoire_moves:
+            move = chess.Move.from_uci(uci_move)
+            print (move.from_square, move.to_square)
+            start_x, start_y = self.square_to_pixels(move.from_square)
+            end_x, end_y = self.square_to_pixels(move.to_square)
+            painter.drawLine(
+                int(start_x),
+                int(start_y),
+                int(end_x),
+                int(end_y)
+            )
+            dx = end_x - start_x
+            dy = end_y - start_y
+            length = math.hypot(dx, dy)
+            if length > 0:
+                ux = dx/length
+                uy = dy/length
+                base_x = end_x - ux * 20
+                base_y = end_y - uy * 20
+                perp_x = -uy
+                perp_y = ux
+                left_x = base_x + perp_x * 12
+                left_y = base_y + perp_y * 12
+                right_x = base_x - perp_x * 12
+                right_y = base_y - perp_y * 12
+                tip = QPointF(end_x,end_y)
+                left_corner = QPointF(left_x,left_y)
+                right_corner = QPointF(right_x, right_y)
+                arrow = QPolygonF([tip,left_corner,right_corner])
+                painter.setBrush(QColor(0, 150, 255, 180))
+                painter.drawPolygon(arrow)
+
+                #print(dx,dy,ux,uy,length,base_x,base_y,perp_x,perp_y,left_x,left_y,right_x,right_y)
+        painter.end()
+
+
+        
 
 board_manager = ChessBoard()
 print(board_manager.load_opening())
@@ -291,8 +361,8 @@ print(board_manager.load_opening())
 saved_openings = board_manager.load_opening()
 for opening in saved_openings["Openings"]:
     print(opening["Name"])
-    print(opening["Moves"])
-    print(len(opening["Moves"]))
+    print(opening["Lines"])
+    print(len(opening["Lines"]))
 
 print(board_manager.selected_square)
 print(board_manager.board.turn)
@@ -335,7 +405,7 @@ for row in range(8):
 board_manager.update_board()
 undo_button = QPushButton("Undo")
 undo_button.clicked.connect(board_manager.undo_move)
-arrow_overlay = ArrowOverlay(board_widget)
+arrow_overlay = ArrowOverlay(board_manager, board_widget)
 arrow_overlay.setGeometry(0, 0, 600, 600)
 arrow_overlay.raise_()
 arrow_overlay.show()
@@ -346,6 +416,7 @@ load_opening_button.clicked.connect(board_manager.load_opening)
 main_layout.addWidget(undo_button, alignment=Qt.AlignHCenter)
 main_layout.addWidget(save_opening_button, alignment=Qt.AlignHCenter)
 main_layout.addWidget(load_opening_button, alignment=Qt.AlignHCenter)
+
 
 window.show()
 

@@ -1,62 +1,64 @@
 {
     "Openings": [
         {
-            "Name": "Vienna Gambit",
+            "Name": "Vienna Game",
             "Color": "White",
-            "Moves": [
-                "e2e4",
-                "e7e5",
-                "b1c3",
-                "g8f6",
-                "f2f4",
-                "e5f4",
-                "e4e5",
-                "f6g8",
-                "g1f3",
-                "b8c6",
-                "d2d4"
+            "Lines": [
+                [
+                    "e2e4",
+                    "e7e5",
+                    "b1c3",
+                    "g8f6",
+                    "f2f4",
+                    "e5f4",
+                    "e4e5",
+                    "f6g8",
+                    "g1f3",
+                    "b8c6",
+                    "d2d4"
+                ],
+                [
+                    "e2e4",
+                    "e7e5",
+                    "b1c3",
+                    "b8c6",
+                    "f1c4",
+                    "f8c5",
+                    "d1g4"
+                ],
+                [
+                    "e2e4",
+                    "e7e5",
+                    "b1c3",
+                    "g8f6",
+                    "f2f4",
+                    "b8c6",
+                    "f4e5",
+                    "c6e5",
+                    "d2d4",
+                    "e5c6",
+                    "e4e5",
+                    "f6g8",
+                    "g1f3"
+                ]
             ]
         },
         {
-            "Name": "Karo-Kann",
+            "Name": "Caro-Kann",
             "Color": "Black",
-            "Moves": [
-                "e2e4",
-                "c7c6",
-                "d2d4",
-                "d7d5",
-                "e4d5",
-                "c6d5"
-            ]
-        },
-        {
-            "Name": "Queens Gambit",
-            "Color": "White",
-            "Moves": [
-                "d2d4",
-                "d7d5",
-                "c2c4",
-                "d5c4",
-                "e2e4",
-                "g8f6",
-                "b1c3",
-                "b8c6",
-                "f1c4"
-            ]
-        },
-        {
-            "Name": "",
-            "Color": "White",
-            "Moves": [
-                "d2d4",
-                "d7d5",
-                "c2c4",
-                "d5c4",
-                "e2e4",
-                "g8f6",
-                "b1c3",
-                "b8c6",
-                "f1c4"
+            "Lines": [
+                [
+                    "e2e4",
+                    "c7c6",
+                    "d2d4",
+                    "d7d5",
+                    "e4e5",
+                    "c6c5",
+                    "d4c5",
+                    "b8c6",
+                    "g1f3",
+                    "c8g4"
+                ]
             ]
         }
     ]
