@@ -1,7 +1,7 @@
 #Imports
-import sys
+import sys, json
 import chess
-from PySide6.QtWidgets import QApplication, QWidget, QGridLayout, QLabel, QPushButton , QVBoxLayout, QHBoxLayout
+from PySide6.QtWidgets import QApplication, QWidget, QGridLayout, QLabel, QPushButton , QVBoxLayout, QHBoxLayout, QDialog, QListWidget, QLineEdit, QComboBox
 from PySide6.QtGui import QPixmap 
 from PySide6.QtCore import Qt 
 from PySide6.QtGui import QPainter, QColor, QBrush, QPen
@@ -19,6 +19,7 @@ main_layout.addWidget(board_widget)
 grid.setSpacing(0)
 grid.setContentsMargins(0, 0, 0, 0)
 main_layout.setAlignment(board_widget, Qt.AlignCenter)
+
 #endregion
 
 class ChessSquare(QLabel):
@@ -33,9 +34,7 @@ class ChessSquare(QLabel):
                 selected_square.setStyleSheet("background-color: #646e40;")
                 self.manager.selected_square = square_index
                 self.manager.highlight_legal_moves()
-                
-                
-       
+                       
          else: 
            if friendly_piece:
                self.manager.reset_highlight()
@@ -50,11 +49,13 @@ class ChessSquare(QLabel):
                if move in self.manager.board.legal_moves:
                    self.manager.board.push(move)
                    self.manager.update_board()
+                   print("Available repertoire moves:", self.manager.get_repertoire_continuations())
                    
                self.manager.reset_highlight()
                self.manager.clear_legal_moves()
                self.manager.selected_square = None
                self.manager.highlight_last_move()
+               print(self.manager.get_recorded_moves())
 
     def paintEvent(self, event):
         QLabel.paintEvent(self, event)
@@ -73,9 +74,6 @@ class ChessSquare(QLabel):
             capture_ring.setPen(ring_pen)
             capture_ring.drawEllipse(5, 5, 65, 65)
             capture_ring.end()
-
-
-
 
 class ChessBoard:
     def __init__(self):
@@ -172,8 +170,130 @@ class ChessBoard:
                     self.restore_square_color(self.last_highlighted_move.from_square)
                     self.restore_square_color(self.last_highlighted_move.to_square)
                     self.last_highlighted_move = None
-    
+
+            print("Available repertoire moves:", self.get_repertoire_continuations())
+
+    def save_opening(self, opening_name, opening_color):
+        moves = self.get_recorded_moves()
+
+        if not moves:
+            print("No moves to save!")
+            return
+
+        print(moves)
+
+        opening = {
+            "Name": opening_name,
+            "Color": opening_color,
+            "Moves": moves
+        }
+
+        openings = self.load_opening()
+        openings["Openings"].append(opening)
+
+
+        with open("Openings.json", "w", encoding="utf-8") as file:
+            json.dump(openings, file, indent=4)
+        
+        return True
+    def load_opening(self):
+        try:
+            with open("Openings.json", "r") as file:
+                openings = json.load(file)
+            if "Openings" not in openings:
+                openings = {"Openings": [openings]}
+
+            return openings
+        except FileNotFoundError:
+            return {"Openings": []}
+
+    def get_recorded_moves(self):
+        moves = []
+
+        for move in self.board.move_stack:
+            moves.append(move.uci())
+
+        return moves
+
+    def show_save_window(self):
+        dialog = QDialog()
+        dialog.setWindowTitle("Save Opening")
+        layout = QVBoxLayout()
+        dialog.setLayout(layout)
+        opening_list = QListWidget()
+        layout.addWidget(opening_list)
+        name_input = QLineEdit()
+        name_input.setPlaceholderText("New Opening")
+        layout.addWidget(name_input)
+        color_choice = QComboBox()
+        color_choice.addItem("White")
+        color_choice.addItem("Black")
+        layout.addWidget(color_choice)
+        create_opening_button = QPushButton("Create Opening")
+        layout.addWidget(create_opening_button)
+
+        def create_opening ():
+            opening_name = name_input.text().strip()
+            opening_color = color_choice.currentText()
+            
+            if not opening_name:
+                print("Enter Opening Name")
+                return
+            
+            saved = self.save_opening(opening_name, opening_color)
+            if saved:
+                dialog.accept()
+
+            print("Creating Opening")
+            print(opening_name)
+            print(opening_color)
+
+
+        create_opening_button.clicked.connect(create_opening)
+        saved_openings = self.load_opening()
+
+        for opening in saved_openings["Openings"]:
+            opening_list.addItem(opening["Name"])
+            
+        def select_opening():
+            selected_item = opening_list.currentItem()
+            if selected_item is not None:
+                print(selected_item.text())
+
+        opening_list.itemDoubleClicked.connect(select_opening)
+
+        dialog.exec()
+
+    def get_repertoire_continuations(self):
+        current_moves = self.get_recorded_moves()
+        saved_openings = self.load_opening()
+        continuations = set()
+        
+        for opening in saved_openings["Openings"]:
+            opening_moves = opening["Moves"]
+            if current_moves == opening_moves[:len(current_moves)]:
+                if len(opening_moves) > len(current_moves):
+                    next_move = opening_moves[len(current_moves)]
+                    continuations.add(next_move)
+                    print("Matching opening:", opening["Name"])
+                    print(next_move)
+        return list(continuations)
+                    
+class ArrowOverlay(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setAttribute(Qt.WA_TransparentForMouseEvents)
+
 board_manager = ChessBoard()
+print(board_manager.load_opening())
+
+saved_openings = board_manager.load_opening()
+for opening in saved_openings["Openings"]:
+    print(opening["Name"])
+    print(opening["Moves"])
+    print(len(opening["Moves"]))
+
 print(board_manager.selected_square)
 print(board_manager.board.turn)
 
@@ -191,9 +311,9 @@ piece_images = {
     "b": "Assets/Pieces/bB.svg",
     "r": "Assets/Pieces/bR.svg",
     "q": "Assets/Pieces/bQ.svg",
-
 }
 #endregion
+
 for row in range(8):
     for col in range(8):
         square = ChessSquare()
@@ -212,12 +332,21 @@ for row in range(8):
         square_index = chess.square(col, 7 - row)
         board_manager.squares[square_index] = square
 
-
 board_manager.update_board()
 undo_button = QPushButton("Undo")
 undo_button.clicked.connect(board_manager.undo_move)
-main_layout.addWidget(undo_button)
+arrow_overlay = ArrowOverlay(board_widget)
+arrow_overlay.setGeometry(0, 0, 600, 600)
+arrow_overlay.raise_()
+arrow_overlay.show()
+save_opening_button = QPushButton("Save Opening")
+save_opening_button.clicked.connect(board_manager.show_save_window)
+load_opening_button = QPushButton("Load Opening")
+load_opening_button.clicked.connect(board_manager.load_opening)
 main_layout.addWidget(undo_button, alignment=Qt.AlignHCenter)
+main_layout.addWidget(save_opening_button, alignment=Qt.AlignHCenter)
+main_layout.addWidget(load_opening_button, alignment=Qt.AlignHCenter)
+
 window.show()
 
 
